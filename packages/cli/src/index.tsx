@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 import { render } from 'ink'
 import { parseArgs } from 'util'
 
@@ -29,12 +29,6 @@ switch (command) {
   case 'init': {
     const { Init } = await import('./commands/init.js')
     const { waitUntilExit } = render(<Init />)
-    await waitUntilExit()
-    break
-  }
-  case 'stats': {
-    const { Stats } = await import('./commands/stats.js')
-    const { waitUntilExit } = render(<Stats />)
     await waitUntilExit()
     break
   }

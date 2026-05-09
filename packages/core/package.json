@@ -3,12 +3,20 @@
   "version": "0.1.0",
   "description": "Runtime translation library — t(), tc(), createTranslator()",
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
+  "files": ["dist", "src"],
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "build": "bun build src/index.ts --outdir dist --target node --external gettext-parser && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun run build"
   },
   "dependencies": {
     "gettext-parser": "9.0.2"

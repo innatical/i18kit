@@ -19,7 +19,7 @@ export function Help({ error }: Props) {
         <Text>  <Text color="green">extract</Text> [dir]            Extract t() and tc() calls, update i18kit.pot</Text>
         <Text>  <Text color="green">init</Text>                     Initialize project, create .i18n.json and i18kit.pot</Text>
         <Text>  <Text color="green">stats</Text>                    Show translation coverage</Text>
-        <Text>  <Text color="green">open</Text>                     Open a .po file in Poedit</Text>
+        <Text>  <Text color="green">open</Text>                     Open project in i18kit</Text>
       </Box>
     </Box>
   )

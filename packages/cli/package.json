@@ -9,9 +9,10 @@
   "main": "./dist/index.js",
   "files": ["dist"],
   "scripts": {
-    "build": "bun build src/index.tsx --outdir dist --target bun --external @swc/core --minify",
+    "build": "bun build src/index.tsx --outdir dist --target node --external @swc/core --external ink --external react --external ink-spinner --external ink-text-input --minify",
     "dev": "bun run src/index.tsx",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun run build"
   },
   "dependencies": {
     "@i18kit/core": "workspace:*",
