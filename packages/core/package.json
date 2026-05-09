@@ -1,0 +1,21 @@
+{
+  "name": "@i18kit/core",
+  "version": "0.1.0",
+  "description": "Runtime translation library — t(), tc(), createTranslator()",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "gettext-parser": "9.0.2"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.13",
+    "@types/gettext-parser": "9.0.0"
+  },
+  "license": "MIT"
+}
