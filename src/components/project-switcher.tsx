@@ -23,7 +23,7 @@ import { useNavigate, useParams } from "@tanstack/react-router";
 export function ProjectSwitcher() {
   const { isMobile } = useSidebar();
   const projects = useAtomValue(savedProjectsAtom);
-  const { projectId } = useParams({ from: "/$projectId" });
+  const { projectId } = useParams({ from: "/desktop/$projectId" });
   const navigate = useNavigate();
 
   const activeProject = projects.find((p) => p.id === projectId) ?? null;
@@ -32,7 +32,11 @@ export function ProjectSwitcher() {
     if (removedId === projectId) {
       const next = projects.find((p) => p.id !== removedId);
       if (next) {
-        navigate({ to: "/$projectId", params: { projectId: next.id }, search: { file: undefined, entry: undefined } });
+        navigate({
+          to: "/desktop/$projectId",
+          params: { projectId: next.id },
+          search: { file: undefined, entry: undefined },
+        });
       } else {
         navigate({ to: "/" });
       }
@@ -40,7 +44,11 @@ export function ProjectSwitcher() {
   });
 
   const addProject = useAddProject((project) => {
-    navigate({ to: "/$projectId", params: { projectId: project.id }, search: { file: undefined, entry: undefined } });
+    navigate({
+      to: "/desktop/$projectId",
+      params: { projectId: project.id },
+      search: { file: undefined, entry: undefined },
+    });
   });
 
   return (
@@ -83,7 +91,7 @@ export function ProjectSwitcher() {
                   key={project.id}
                   onClick={() =>
                     navigate({
-                      to: "/$projectId",
+                      to: "/desktop/$projectId",
                       params: { projectId: project.id },
                       search: {
                         entry: undefined,

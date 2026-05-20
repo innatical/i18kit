@@ -38,8 +38,8 @@ function ProgressBar({ value, max }: { value: number; max: number }) {
 }
 
 function FileItem({ path, name }: { path: string; name: string }) {
-  const { file } = useSearch({ from: "/$projectId" });
-  const navigate = useNavigate({ from: "/$projectId" });
+  const { file } = useSearch({ from: "/desktop/$projectId" });
+  const navigate = useNavigate({ from: "/desktop/$projectId" });
   const { data: poFile } = usePoFile(path);
   const isActive = file === name;
 
@@ -77,8 +77,8 @@ function FileItem({ path, name }: { path: string; name: string }) {
 }
 
 function PotFileItem({ path, name }: { path: string; name: string }) {
-  const { file } = useSearch({ from: "/$projectId" });
-  const navigate = useNavigate({ from: "/$projectId" });
+  const { file } = useSearch({ from: "/desktop/$projectId" });
+  const navigate = useNavigate({ from: "/desktop/$projectId" });
   const { data: poFile } = usePoFile(path);
   const isActive = file === name;
 
@@ -110,7 +110,7 @@ function PotFileItem({ path, name }: { path: string; name: string }) {
 }
 
 export function FileSidebar() {
-  const { projectId } = useParams({ from: "/$projectId" });
+  const { projectId } = useParams({ from: "/desktop/$projectId" });
   const projects = useAtomValue(savedProjectsAtom);
   const project = projects.find((p) => p.id === projectId);
   const localesDir = useLocalesDir(project?.path);

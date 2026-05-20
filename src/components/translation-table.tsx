@@ -1,5 +1,5 @@
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
-import { usePoFile } from "@/hooks/use-po-queries";
+import { usePoFile, useLocalesDir } from "@/hooks/use-po-queries";
 import { useAtom, useAtomValue } from "jotai";
 import { savedProjectsAtom, searchQueryAtom, filterAtom } from "@/lib/atoms";
 import { Input } from "@/components/ui/input";
@@ -66,15 +66,18 @@ function EntryRow({
 }
 
 export function TranslationTable() {
-  const { projectId } = useParams({ from: "/$projectId" });
-  const { file, entry: selectedEntryId } = useSearch({ from: "/$projectId" });
-  const navigate = useNavigate({ from: "/$projectId" });
+  const { projectId } = useParams({ from: "/desktop/$projectId" });
+  const { file, entry: selectedEntryId } = useSearch({
+    from: "/desktop/$projectId",
+  });
+  const navigate = useNavigate({ from: "/desktop/$projectId" });
   const projects = useAtomValue(savedProjectsAtom);
   const project = projects.find((p) => p.id === projectId);
   const [q, setQ] = useAtom(searchQueryAtom);
   const [filter, setFilter] = useAtom(filterAtom);
+  const localesDir = useLocalesDir(project?.path);
 
-  const filePath = file && project ? `${project.path}/${file}` : null;
+  const filePath = file && localesDir ? `${localesDir}/${file}` : null;
   const { data: poFile, isLoading } = usePoFile(filePath);
 
   const entries = poFile?.entries ?? [];

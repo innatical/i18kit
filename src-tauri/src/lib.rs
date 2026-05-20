@@ -1,3 +1,5 @@
+mod translate;
+
 use std::fs;
 use std::path::Path;
 
@@ -45,6 +47,22 @@ fn create_dir(path: String) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(target_os = "macos")]
+    keyring_core::set_default_store(
+        apple_native_keyring_store::keychain::Store::new()
+            .expect("failed to open macOS keychain"),
+    );
+    #[cfg(target_os = "linux")]
+    keyring_core::set_default_store(
+        linux_keyutils_keyring_store::Store::new()
+            .expect("failed to open linux keyutils store"),
+    );
+    #[cfg(target_os = "windows")]
+    keyring_core::set_default_store(
+        windows_native_keyring_store::Store::new()
+            .expect("failed to open windows credential store"),
+    );
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
@@ -53,7 +71,14 @@ pub fn run() {
             write_text_file,
             read_dir,
             file_exists,
-            create_dir
+            create_dir,
+            translate::list_providers,
+            translate::save_api_key,
+            translate::delete_api_key,
+            translate::get_settings,
+            translate::save_settings,
+            translate::translate_text,
+            translate::debug_api_key,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

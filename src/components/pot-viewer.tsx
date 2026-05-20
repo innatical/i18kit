@@ -88,8 +88,8 @@ function LocaleRow({
 }
 
 export function PotViewer() {
-  const { projectId } = useParams({ from: "/$projectId" });
-  const { file } = useSearch({ from: "/$projectId" });
+  const { projectId } = useParams({ from: "/desktop/$projectId" });
+  const { file } = useSearch({ from: "/desktop/$projectId" });
   const projects = useAtomValue(savedProjectsAtom);
   const project = projects.find((p) => p.id === projectId);
   const [q, setQ] = useAtom(searchQueryAtom);
@@ -100,7 +100,9 @@ export function PotViewer() {
   const saveConfig = useSaveProjectConfig(project?.path);
   const rel = config?.localesDir;
   const localesDir = project
-    ? !rel || rel === "." ? project.path : `${project.path}/${rel}`
+    ? !rel || rel === "."
+      ? project.path
+      : `${project.path}/${rel}`
     : null;
   const filePath = file && localesDir ? `${localesDir}/${file}` : null;
   const { data: poFile, isLoading } = usePoFile(filePath);

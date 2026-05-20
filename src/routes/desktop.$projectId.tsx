@@ -1,4 +1,9 @@
-import { createFileRoute, useSearch, useParams } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useSearch,
+  useParams,
+  Link,
+} from "@tanstack/react-router";
 import {
   Sidebar,
   SidebarInset,
@@ -14,11 +19,12 @@ import { TranslationTable } from "@/components/translation-table";
 import { EntryEditor } from "@/components/entry-editor";
 import { PotViewer } from "@/components/pot-viewer";
 import { SetupWizard } from "@/components/setup-wizard";
+import { Settings } from "lucide-react";
 import { useAtomValue } from "jotai";
 import { savedProjectsAtom } from "@/lib/atoms";
 import { useProjectConfig } from "@/hooks/use-po-queries";
 
-export const Route = createFileRoute("/$projectId")({
+export const Route = createFileRoute("/desktop/$projectId")({
   validateSearch: (search: Record<string, unknown>) => ({
     file: typeof search.file === "string" ? search.file : undefined,
     entry: typeof search.entry === "string" ? search.entry : undefined,
@@ -27,8 +33,8 @@ export const Route = createFileRoute("/$projectId")({
 });
 
 function ProjectEditor() {
-  const { projectId } = useParams({ from: "/$projectId" });
-  const { file } = useSearch({ from: "/$projectId" });
+  const { projectId } = useParams({ from: "/desktop/$projectId" });
+  const { file } = useSearch({ from: "/desktop/$projectId" });
   const projects = useAtomValue(savedProjectsAtom);
   const project = projects.find((p) => p.id === projectId);
 
@@ -68,6 +74,15 @@ function ProjectEditor() {
       <Sidebar collapsible="none" className="border-r border-sidebar-border">
         <div data-tauri-drag-region className="h-7 w-full shrink-0" />
         <FileSidebar />
+        <div className="mt-auto p-2 border-t border-white/5">
+          <Link
+            to="/desktop/settings"
+            className="flex items-center gap-2 px-2 py-1.5 text-[11px] text-zinc-600 hover:text-zinc-400 transition-colors"
+          >
+            <Settings size={12} />
+            Settings
+          </Link>
+        </div>
       </Sidebar>
       <SidebarInset className="flex flex-col overflow-hidden h-screen">
         {content}

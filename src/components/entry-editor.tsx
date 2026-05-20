@@ -1,36 +1,59 @@
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
-import { usePoFile, useSaveEntry } from "@/hooks/use-po-queries";
+import {
+  usePoFile,
+  useSaveEntry,
+  useLocalesDir,
+  useProjectConfig,
+} from "@/hooks/use-po-queries";
+import { useProviders, useSettings, useTranslate } from "@/hooks/use-translate";
 import { useAtomValue } from "jotai";
 import { savedProjectsAtom } from "@/lib/atoms";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useState, useEffect } from "react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function EntryEditor() {
-  const { projectId } = useParams({ from: "/$projectId" });
-  const { file, entry: selectedEntryId } = useSearch({ from: "/$projectId" });
-  const navigate = useNavigate({ from: "/$projectId" });
+  const { projectId } = useParams({ from: "/desktop/$projectId" });
+  const { file, entry: selectedEntryId } = useSearch({
+    from: "/desktop/$projectId",
+  });
+  const navigate = useNavigate({ from: "/desktop/$projectId" });
   const projects = useAtomValue(savedProjectsAtom);
   const project = projects.find((p) => p.id === projectId);
+  const localesDir = useLocalesDir(project?.path);
 
-  const filePath = file && project ? `${project.path}/${file}` : null;
+  const filePath = file && localesDir ? `${localesDir}/${file}` : null;
   const { data: poFile } = usePoFile(filePath);
   const saveEntry = useSaveEntry();
+
+  const { data: config } = useProjectConfig(project?.path);
+  const { data: providers = [] } = useProviders();
+  const { data: settings } = useSettings();
+  const translate = useTranslate();
 
   const entry = poFile?.entries.find((e) => e.id === selectedEntryId) ?? null;
 
   const [translation, setTranslation] = useState("");
   const [fuzzy, setFuzzy] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [translateError, setTranslateError] = useState<string | null>(null);
 
   useEffect(() => {
     if (entry) {
       setTranslation(entry.msgstr[0] ?? "");
       setFuzzy(entry.fuzzy);
       setIsDirty(false);
+      setTranslateError(null);
     }
   }, [entry?.id, filePath]);
 
@@ -49,7 +72,6 @@ export function EntryEditor() {
     });
     setIsDirty(false);
     if (fuzzy !== entry.fuzzy) return;
-    // Auto-advance to next untranslated entry
     const entries = poFile?.entries ?? [];
     const idx = entries.findIndex((e) => e.id === entry.id);
     const next = entries.slice(idx + 1).find((e) => !e.translated);
@@ -57,6 +79,39 @@ export function EntryEditor() {
       navigate({ search: (prev) => ({ ...prev, entry: next.id }) });
     }
   };
+
+  const handleGenerate = (providerId: string) => {
+    if (!entry?.msgid || !config) return;
+    const targetLang = file?.replace(/\.po$/, "") ?? "";
+    setTranslateError(null);
+    translate.mutate(
+      {
+        provider: providerId,
+        text: entry.msgid,
+        sourceLang: config.sourceLanguage,
+        targetLang,
+      },
+      {
+        onSuccess: (result) => {
+          setTranslation(result);
+          setFuzzy(true);
+          setIsDirty(true);
+        },
+        onError: (err) => {
+          setTranslateError(String(err));
+        },
+      },
+    );
+  };
+
+  const configuredProviders = providers.filter((p) => p.hasKey);
+  const defaultProviderId = settings?.defaultProvider ?? null;
+  const defaultProvider = configuredProviders.find(
+    (p) => p.id === defaultProviderId,
+  );
+  const otherProviders = configuredProviders.filter(
+    (p) => p.id !== defaultProviderId,
+  );
 
   if (!entry) {
     return (
@@ -89,6 +144,45 @@ export function EntryEditor() {
           </>
         )}
         <div className="ml-auto flex items-center gap-3">
+          {/* Generate button */}
+          {configuredProviders.length > 0 && (
+            <div className="flex items-center">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  handleGenerate(defaultProviderId ?? configuredProviders[0].id)
+                }
+                disabled={translate.isPending}
+                className="h-6 text-xs px-2.5"
+              >
+                {translate.isPending
+                  ? "Generating…"
+                  : `Generate${defaultProvider ? ` · ${defaultProvider.label}` : ""}`}
+              </Button>
+              {configuredProviders.length > 1 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    disabled={translate.isPending}
+                    className="h-6 w-6 inline-flex items-center justify-center border border-white/10 text-zinc-400 hover:bg-white/5 transition-colors disabled:opacity-50 rounded-l-none"
+                  >
+                    <ChevronDown size={10} />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent side="top" align="end">
+                    {otherProviders.map((p) => (
+                      <DropdownMenuItem
+                        key={p.id}
+                        onClick={() => handleGenerate(p.id)}
+                      >
+                        Generate with {p.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+          )}
+
           <Label className="cursor-pointer text-zinc-400">
             <Checkbox
               checked={fuzzy}
@@ -109,6 +203,12 @@ export function EntryEditor() {
           </Button>
         </div>
       </div>
+
+      {translateError && (
+        <div className="px-4 py-1.5 text-[11px] text-red-400 bg-red-400/5 border-b border-red-400/10 shrink-0">
+          {translateError}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 divide-x divide-white/5 flex-1 min-h-0 overflow-hidden">
         {/* Source */}
