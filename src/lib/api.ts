@@ -46,6 +46,12 @@ export interface TranslationUnit {
   updatedAt: string;
 }
 
+export interface GitHubOrg {
+  login: string;
+  avatarUrl: string;
+  isUser: boolean;
+}
+
 export interface GitHubRepo {
   owner: string;
   name: string;
@@ -56,7 +62,11 @@ export interface GitHubRepo {
 
 export const api = {
   github: {
-    repos: () => apiFetch<{ connected: boolean; repos: GitHubRepo[] }>("/github/repos"),
+    orgs: () => apiFetch<{ connected: boolean; orgs: GitHubOrg[] }>("/github/orgs"),
+    repos: (org?: string) =>
+      apiFetch<{ connected: boolean; repos: GitHubRepo[] }>(
+        `/github/repos${org ? `?org=${encodeURIComponent(org)}` : ""}`,
+      ),
   },
 
   projects: {

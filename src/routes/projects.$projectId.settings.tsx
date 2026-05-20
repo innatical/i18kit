@@ -171,15 +171,22 @@ function GitHubIntegrationCard({
 
 function ConnectGitHubForm({ projectId }: { projectId: string }) {
   const qc = useQueryClient();
+  const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
   const [selectedRepo, setSelectedRepo] = useState<GitHubRepo | null>(null);
   const [search, setSearch] = useState("");
   const [localesDir, setLocalesDir] = useState(".");
   const [linkError, setLinkError] = useState<string | null>(null);
 
-  const { data: githubData, isLoading: reposLoading } = useQuery({
-    queryKey: ["github-repos"],
-    queryFn: () => api.github.repos(),
+  const { data: orgsData, isLoading: orgsLoading } = useQuery({
+    queryKey: ["github-orgs"],
+    queryFn: () => api.github.orgs(),
     retry: false,
+  });
+
+  const { data: reposData, isLoading: reposLoading } = useQuery({
+    queryKey: ["github-repos", selectedOrg],
+    queryFn: () => api.github.repos(selectedOrg ?? undefined),
+    enabled: selectedOrg !== null,
   });
 
   const connect = useMutation({
@@ -200,10 +207,10 @@ function ConnectGitHubForm({ projectId }: { projectId: string }) {
   });
 
   const filteredRepos = useMemo(() => {
-    if (!githubData?.repos) return [];
+    if (!reposData?.repos) return [];
     const q = search.toLowerCase();
-    return githubData.repos.filter((r) => r.fullName.toLowerCase().includes(q));
-  }, [githubData?.repos, search]);
+    return reposData.repos.filter((r) => r.name.toLowerCase().includes(q));
+  }, [reposData?.repos, search]);
 
   async function linkGitHub() {
     setLinkError(null);
@@ -214,7 +221,7 @@ function ConnectGitHubForm({ projectId }: { projectId: string }) {
     if (result.error) setLinkError(result.error.message ?? "Failed to connect GitHub");
   }
 
-  if (reposLoading) {
+  if (orgsLoading) {
     return (
       <div className="border border-border bg-card p-4">
         <div className="h-7 w-32 bg-muted/30 animate-pulse" />
@@ -222,7 +229,7 @@ function ConnectGitHubForm({ projectId }: { projectId: string }) {
     );
   }
 
-  if (!githubData?.connected) {
+  if (!orgsData?.connected) {
     return (
       <div className="border border-border bg-card p-4 space-y-3">
         <div className="flex items-center gap-2">
@@ -257,37 +264,64 @@ function ConnectGitHubForm({ projectId }: { projectId: string }) {
 
       {!selectedRepo ? (
         <div className="space-y-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/40 pointer-events-none" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="search repositories…"
-              className="w-full h-7 border border-border bg-transparent pl-8 pr-3 text-[11px] font-mono focus:outline-none focus:border-foreground/30 transition-colors placeholder:text-muted-foreground/30"
-            />
+          {/* Org picker */}
+          <div className="flex gap-1 flex-wrap">
+            {orgsData.orgs.map((org) => (
+              <button
+                key={org.login}
+                onClick={() => { setSelectedOrg(org.login); setSearch(""); }}
+                className={`flex items-center gap-1.5 h-7 px-2.5 text-[11px] border transition-colors ${
+                  selectedOrg === org.login
+                    ? "border-foreground/30 text-foreground bg-accent/40"
+                    : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/20"
+                }`}
+              >
+                <img src={org.avatarUrl} alt="" className="w-3.5 h-3.5 rounded-full" />
+                {org.login}
+              </button>
+            ))}
           </div>
-          <div className="max-h-52 overflow-y-auto border border-border divide-y divide-border/50">
-            {filteredRepos.length === 0 ? (
-              <p className="px-3 py-4 text-[11px] text-muted-foreground/60 text-center">
-                {search ? "// no matches" : "// no repositories found"}
-              </p>
-            ) : (
-              filteredRepos.map((repo) => (
-                <button
-                  key={repo.fullName}
-                  onClick={() => setSelectedRepo(repo)}
-                  className="w-full text-left px-3 py-2 text-[11px] hover:bg-accent/40 transition-colors flex items-center justify-between gap-2"
-                >
-                  <span className="font-mono truncate">{repo.fullName}</span>
-                  {repo.private && (
-                    <span className="shrink-0 text-muted-foreground/50 border border-border px-1.5 py-0.5 text-[10px]">
-                      private
-                    </span>
-                  )}
-                </button>
-              ))
-            )}
-          </div>
+
+          {/* Repo list */}
+          {selectedOrg && (
+            <>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/40 pointer-events-none" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="search repositories…"
+                  className="w-full h-7 border border-border bg-transparent pl-8 pr-3 text-[11px] font-mono focus:outline-none focus:border-foreground/30 transition-colors placeholder:text-muted-foreground/30"
+                />
+              </div>
+              <div className="max-h-52 overflow-y-auto border border-border divide-y divide-border/50">
+                {reposLoading ? (
+                  <div className="px-3 py-4 flex justify-center">
+                    <div className="h-4 w-24 bg-muted/30 animate-pulse" />
+                  </div>
+                ) : filteredRepos.length === 0 ? (
+                  <p className="px-3 py-4 text-[11px] text-muted-foreground/60 text-center">
+                    {search ? "// no matches" : "// no repositories found"}
+                  </p>
+                ) : (
+                  filteredRepos.map((repo) => (
+                    <button
+                      key={repo.fullName}
+                      onClick={() => setSelectedRepo(repo)}
+                      className="w-full text-left px-3 py-2 text-[11px] hover:bg-accent/40 transition-colors flex items-center justify-between gap-2"
+                    >
+                      <span className="font-mono truncate">{repo.name}</span>
+                      {repo.private && (
+                        <span className="shrink-0 text-muted-foreground/50 border border-border px-1.5 py-0.5 text-[10px]">
+                          private
+                        </span>
+                      )}
+                    </button>
+                  ))
+                )}
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
