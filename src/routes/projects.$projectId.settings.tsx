@@ -173,6 +173,7 @@ function ConnectGitHubForm({ projectId }: { projectId: string }) {
   const qc = useQueryClient();
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
   const [selectedRepo, setSelectedRepo] = useState<GitHubRepo | null>(null);
+  const [branch, setBranch] = useState("");
   const [search, setSearch] = useState("");
   const [localesDir, setLocalesDir] = useState(".");
   const [linkError, setLinkError] = useState<string | null>(null);
@@ -194,7 +195,7 @@ function ConnectGitHubForm({ projectId }: { projectId: string }) {
       api.integrations.connectGitHub(projectId, {
         repoOwner: selectedRepo!.owner,
         repoName: selectedRepo!.name,
-        branch: selectedRepo!.defaultBranch,
+        branch,
         localesDir,
       }),
     onSuccess: (data) => {
@@ -322,7 +323,7 @@ function ConnectGitHubForm({ projectId }: { projectId: string }) {
                   filteredRepos.map((repo) => (
                     <button
                       key={repo.fullName}
-                      onClick={() => setSelectedRepo(repo)}
+                      onClick={() => { setSelectedRepo(repo); setBranch(repo.defaultBranch); }}
                       className="w-full text-left px-3 py-2 text-[11px] hover:bg-accent/40 transition-colors flex items-center justify-between gap-2"
                     >
                       <span className="font-mono truncate">{repo.name}</span>
@@ -359,10 +360,12 @@ function ConnectGitHubForm({ projectId }: { projectId: string }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <p className="text-[10px] text-muted-foreground/40 uppercase tracking-widest">branch</p>
-              <p className="h-7 flex items-center px-3 border border-border bg-muted/10 text-[11px] font-mono text-muted-foreground">
-                {selectedRepo.defaultBranch}
-              </p>
+              <label className="text-[10px] text-muted-foreground/40 uppercase tracking-widest">branch</label>
+              <input
+                value={branch}
+                onChange={(e) => setBranch(e.target.value)}
+                className="w-full h-7 border border-border bg-transparent px-3 text-[11px] font-mono focus:outline-none focus:border-foreground/30 transition-colors"
+              />
             </div>
             <div className="space-y-1.5">
               <label className="text-[10px] text-muted-foreground/40 uppercase tracking-widest">
