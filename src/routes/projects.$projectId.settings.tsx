@@ -265,7 +265,7 @@ function ConnectGitHubForm({ projectId }: { projectId: string }) {
       {!selectedRepo ? (
         <div className="space-y-2">
           {/* Org picker */}
-          <div className="flex gap-1 flex-wrap">
+          <div className="flex gap-1 flex-wrap items-center">
             {orgsData.orgs.map((org) => (
               <button
                 key={org.login}
@@ -280,6 +280,15 @@ function ConnectGitHubForm({ projectId }: { projectId: string }) {
                 {org.login}
               </button>
             ))}
+            <a
+              href={orgsData.manageUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 h-7 px-2.5 text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" />
+              add org
+            </a>
           </div>
 
           {/* Repo list */}

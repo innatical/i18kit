@@ -62,7 +62,7 @@ export interface GitHubRepo {
 
 export const api = {
   github: {
-    orgs: () => apiFetch<{ connected: boolean; orgs: GitHubOrg[] }>("/github/orgs"),
+    orgs: () => apiFetch<{ connected: boolean; manageUrl: string; orgs: GitHubOrg[] }>("/github/orgs"),
     repos: (org?: string) =>
       apiFetch<{ connected: boolean; repos: GitHubRepo[] }>(
         `/github/repos${org ? `?org=${encodeURIComponent(org)}` : ""}`,
