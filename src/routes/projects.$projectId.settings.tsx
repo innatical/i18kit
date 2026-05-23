@@ -266,6 +266,12 @@ function ConnectGitHubForm({ projectId }: { projectId: string }) {
         <div className="space-y-2">
           {/* Org picker */}
           <div className="flex gap-1 flex-wrap items-center">
+            <button
+              onClick={linkGitHub}
+              className="flex items-center gap-1 h-7 px-2.5 text-[11px] text-muted-foreground/50 hover:text-muted-foreground border border-dashed border-border transition-colors"
+            >
+              reconnect
+            </button>
             {orgsData.orgs.map((org) => (
               <button
                 key={org.login}
