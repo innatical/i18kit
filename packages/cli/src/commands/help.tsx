@@ -19,7 +19,12 @@ export function Help({ error }: Props) {
         <Text>  <Text color="green">extract</Text> [dir]            Extract t() and tc() calls, update i18kit.pot</Text>
         <Text>  <Text color="green">init</Text>                     Initialize project, create .i18n.json and i18kit.pot</Text>
         <Text>  <Text color="green">stats</Text>                    Show translation coverage</Text>
-        <Text>  <Text color="green">open</Text>                     Open project in i18kit</Text>
+        <Text>  <Text color="green">open</Text>                     Edit translations in your browser</Text>
+      </Box>
+      <Box flexDirection="column">
+        <Text bold>Options for open</Text>
+        <Text>  <Text color="green">--port</Text> {'<n>'}              Listen on a specific port (default: random)</Text>
+        <Text>  <Text color="green">--no-open</Text>                Print the link instead of opening a browser</Text>
       </Box>
     </Box>
   )

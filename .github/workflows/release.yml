@@ -1,0 +1,120 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write # npm provenance
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.1
+
+      # Node 24 ships an npm new enough for provenance; setup-node also wires
+      # NODE_AUTH_TOKEN into .npmrc for the registry.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - run: bun install --frozen-lockfile
+
+      # Versions come from the release tag (v1.2.3 -> 1.2.3), so package.json
+      # versions never need a commit. Both packages are released in lockstep.
+      - name: Set version from release tag
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          version="${TAG#v}"
+          semver='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
+          if ! [[ "$version" =~ $semver ]]; then
+            echo "::error::Release tag '$TAG' is not a version like v1.2.3 or v1.2.3-beta.1"
+            exit 1
+          fi
+
+          (cd packages/core && npm pkg set "version=$version")
+          # Pin the dependency explicitly: bun resolves workspace:* from its
+          # lockfile, not from the version we just stamped.
+          (cd packages/cli && npm pkg set "version=$version" "dependencies.@i18kit/core=$version")
+          echo "Releasing $version"
+
+      - name: Typecheck
+        run: |
+          bun run --cwd packages/core typecheck
+          bun run --cwd packages/cli typecheck
+
+      # core first: its dist is needed by the cli build, and the packed cli depends on it.
+      - name: Build
+        run: |
+          bun run --cwd packages/core build
+          bun run --cwd packages/cli build
+
+      - name: Pack
+        run: |
+          mkdir tarballs
+          bun pm pack --cwd packages/core --destination "$PWD/tarballs"
+          bun pm pack --cwd packages/cli --destination "$PWD/tarballs"
+
+      # Publishing is staged: this needs no 2FA, but nothing is live until a
+      # maintainer approves each staged version (see the job summary).
+      - name: Stage for publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PRERELEASE: ${{ github.event.release.prerelease }}
+        run: |
+          set -euo pipefail
+          staged=()
+          for dir in core cli; do
+            name=$(node -p "require('./packages/$dir/package.json').name")
+            version=$(node -p "require('./packages/$dir/package.json').version")
+
+            # Staged versions share the semver index with published ones, so a
+            # re-run must skip both (npm view only sees published versions).
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "::notice::$name@$version is already on npm, skipping"
+              continue
+            fi
+            if npm stage list "$name" 2>/dev/null | grep -qE "(^|[^0-9A-Za-z.-])${version//./\\.}($|[^0-9A-Za-z.-])"; then
+              echo "::notice::$name@$version is already staged, skipping"
+              continue
+            fi
+
+            dist_tag=latest
+            if [[ "$version" == *-* || "$PRERELEASE" == "true" ]]; then dist_tag=next; fi
+
+            # leading ./ matters: npm treats a bare "a/b.tgz" as a GitHub user/repo
+            tarball="./tarballs/$(echo "${name#@}" | tr / -)-$version.tgz"
+            npm stage publish "$tarball" --provenance --access public --tag "$dist_tag"
+            staged+=("$name")
+          done
+
+          if [ "${#staged[@]}" -eq 0 ]; then
+            echo "::notice::Nothing to stage; this release was already staged or published (re-run?)"
+            exit 0
+          fi
+
+          {
+            echo "## Staged, not yet published"
+            echo
+            echo "Approve each staged version with 2FA. Approve \`@i18kit/core\` first: the CLI depends on it."
+            echo
+            echo '```sh'
+            for name in "${staged[@]}"; do
+              echo "npm stage list $name"
+            done
+            echo "npm stage approve <stage-id>"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
